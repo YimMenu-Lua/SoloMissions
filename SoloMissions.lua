@@ -1,7 +1,11 @@
 local SOLO_MISSIONS <const> = gui.add_tab("Solo Missions")
 
-local function SET_BIT(value, position)
-    return (value | (1 << position))
+function locals.set_bits(scriptName, index, ...)
+    local value = locals.get_int(scriptName, index)
+    for _, bit in ipairs({ ... }) do
+        value = value | (1 << bit)
+    end
+    locals.set_int(scriptName, index, value)
 end
 
 local function GetBuildNumber()
@@ -10,19 +14,59 @@ local function GetBuildNumber()
 end
 
 local function IsOnline()
-    return network.is_session_started()
-    and not script.is_active("maintransition")
+    return network.is_session_started() and not script.is_active("maintransition")
 end
 
-local TARGET_BUILD <const> = "3504"
+local function GetMissionScript()
+    if script.is_active("fm_mission_controller") then
+        return "fm_mission_controller"
+    end
+    if script.is_active("fm_mission_controller_2020") then
+        return "fm_mission_controller_2020"
+    end
+    return nil
+end
+
+local TARGET_BUILD <const> = "3570.0"
 local CURRENT_BUILD <const> = GetBuildNumber()
 local FMMC_LAUNCHER <const> = "fmmc_launcher"
-local FM_MISSION_CONTROLLER <const> = "fm_mission_controller"
-local FM_MISSION_CONTROLLER_2020 <const> = "fm_mission_controller_2020"
 
 local SoloMissions = false
-local patch_enabled = false
-local casino_heist_patch = nil
+local patchEnabled = false
+local casinoHeistPatch = nil
+
+-- search in fmmc_launcher.c
+local scrGlobals = {
+    nextContentID = 4718592 + 131931,          -- "nrcid" ... StringCopy(Global_...[... /*6*/]
+    minNumParticipants = 4718592 + 3536,       -- Global_... = "minNu"
+    numPlayersPerTeam = 4718592 + 3542,        -- regex: else\s+?{\s+?HUD::ADD_TEXT_COMPONENT_INTEGER\(Global_
+    criticalMinimumForTeam = 4718592 + 184007, -- "tcmin" ... Global_...[...] = 0;
+    numberOfTeams = 4718592 + 3539,            -- Global_... = "dtn"
+    maxNumberOfTeams = 4718592 + 3540,         -- Global_... = "tnum"
+}
+local function MissionHeaderMinPlayers(index)
+    return 794954 + 4 + 1 + index * 95 + 75 -- [5] = -1279529723; ... Global_... = 1;
+end
+
+local scrLocals = {
+    ["fmmc_launcher"] = {
+        minPlayers = 19990 + 15,       -- regex: Local_\d+?\.f_\d+? = 1;\s+?Global_\d+?\.f_\d+? = 1;
+        missionVariation = 19990 + 34, -- regex: HUD_MG_TENNIS.+?\s+.+?Local_\d+?\.f_\d+? \+ 1
+    },
+    ["fm_mission_controller"] = {
+        serverBitSet = 19787 + 1,
+        serverBitSet2 = 19787 + 2,
+        nextMission = 19787 + 1062,   -- regex: (Local_\d+?\.f_\d+?) < 6 && \1 >= 0
+        teamScore = 19787 + 1232 + 1, -- regex: < 4\)\s+?{\s+?(Local_\d+?\.f_\d+?\[.+?\]) = \(?\1 \+ .+?\)?;
+    },
+    ["fm_mission_controller_2020"] = {
+        serverBitSet = 54353 + 1,
+        serverBitSet2 = 54353 + 2,
+        nextMission = 54353 + 1589,   -- regex: same as above
+        teamScore = 54353 + 1776 + 1, -- regex: same as above
+    }
+}
+
 
 SOLO_MISSIONS:add_imgui(function()
     if CURRENT_BUILD ~= TARGET_BUILD then
@@ -38,74 +82,51 @@ SOLO_MISSIONS:add_imgui(function()
     SoloMissions, _ = ImGui.Checkbox("Solo Missions", SoloMissions)
 
     if ImGui.Button("Skip to Next Checkpoint") then
-        if script.is_active(FM_MISSION_CONTROLLER) then
-            local value = locals.get_int(FM_MISSION_CONTROLLER, 19783 + 2) -- if \(func_....?\(.*?Global_.*?\.f_.*?\) && !.*?\(.?Local_.....?\.f_1, 16\)\)
-            value = SET_BIT(value, 17)
-            locals.set_int(FM_MISSION_CONTROLLER, 19783 + 2, value)
-        elseif script.is_active(FM_MISSION_CONTROLLER_2020) then
-            local value = locals.get_int(FM_MISSION_CONTROLLER_2020, 52171 + 2)
-            value = SET_BIT(value, 17)
-            locals.set_int(FM_MISSION_CONTROLLER_2020, 52171 + 2, value)
-        end
+        local mscript = GetMissionScript()
+        if not mscript then return end
+
+        locals.set_bits(mscript, scrLocals[mscript].serverBitSet2, 17)
     end
 
     if ImGui.Button("Instant Finish") then
+        local mscript = GetMissionScript()
+        if not mscript then return end
+
         for i = 0, 5 do
-            globals.set_string(4718592 + 128791 + 1 + i * 6, "") -- if \(NETWORK::UGC_QUERY_BY_CONTENT_ID\(&\(Global_4......?\.f_1.....?\[0 /\*6\*/\]\), true, func_.*?\(iParam2\)\)\)
+            globals.set_string(scrGlobals.nextContentID + 1 + i * 6, "", 0)
         end
 
-        if script.is_active(FM_MISSION_CONTROLLER) then
-            locals.set_int(FM_MISSION_CONTROLLER, 19783 + 1062, 5)
-            locals.set_int(FM_MISSION_CONTROLLER, 19783 + 1232 + 1, 999999)
-
-            local value = locals.get_int(FM_MISSION_CONTROLLER, 19783 + 1)
-            value = SET_BIT(value, 9)
-            value = SET_BIT(value, 16)
-            locals.set_int(FM_MISSION_CONTROLLER, 19783 + 1, value)
-        elseif script.is_active(FM_MISSION_CONTROLLER_2020) then
-            locals.set_int(FM_MISSION_CONTROLLER_2020, 52171 + 1589, 5)
-            locals.set_int(FM_MISSION_CONTROLLER_2020, 52171 + 1776 + 1, 999999)
-
-            local value = locals.get_int(FM_MISSION_CONTROLLER_2020, 52171 + 1)
-            value = SET_BIT(value, 9)
-            value = SET_BIT(value, 16)
-            locals.set_int(FM_MISSION_CONTROLLER_2020, 52171 + 1, value)
-        end
+        locals.set_int(mscript, scrLocals[mscript].nextMission, 5)
+        locals.set_int(mscript, scrLocals[mscript].teamScore, 999999)
+        locals.set_bits(mscript, scrLocals[mscript].serverBitSet, 9, 16)
     end
 
     ImGui.SameLine()
 
     if ImGui.Button("Force Fail") then
-        if script.is_active(FM_MISSION_CONTROLLER) then
-            local value = locals.get_int(FM_MISSION_CONTROLLER, 19783 + 1)
-            value = SET_BIT(value, 16)
-            value = SET_BIT(value, 20)
-            locals.set_int(FM_MISSION_CONTROLLER, 19783 + 1, value)
-        elseif script.is_active(FM_MISSION_CONTROLLER_2020) then
-            local value = locals.get_int(FM_MISSION_CONTROLLER_2020, 52171 + 1)
-            value = SET_BIT(value, 16)
-            value = SET_BIT(value, 20)
-            locals.set_int(FM_MISSION_CONTROLLER_2020, 52171 + 1, value)
-        end
+        local mscript = GetMissionScript()
+        if not mscript then return end
+
+        locals.set_bits(mscript, scrLocals[mscript].serverBitSet, 16, 20)
     end
 
     ImGui.Dummy(1, 10)
     ImGui.SeparatorText("Casino Heist Patch")
     ImGui.Spacing()
 
-    patch_enabled, Clicked = ImGui.Checkbox(
-        ("%s Patch"):format(patch_enabled and "Disable" or "Enable"),
-        patch_enabled
+    patchEnabled, Clicked = ImGui.Checkbox(
+        ("%s Patch"):format(patchEnabled and "Disable" or "Enable"),
+        patchEnabled
     )
 
     if Clicked then
-        if patch_enabled then
-            if casino_heist_patch then
-                casino_heist_patch:enable_patch()
+        if patchEnabled then
+            if casinoHeistPatch then
+                casinoHeistPatch:enable_patch()
                 return
             end
 
-            casino_heist_patch = scr_patch:new(
+            casinoHeistPatch = scr_patch:new(
                 "fmmc_launcher",
                 "SCJJAT",
                 "2D 01 03 00 00 5D ? ? ? 2A 06 56 05 00 5D ? ? ? 20 2A 06 56 05 00 5D",
@@ -113,8 +134,8 @@ SOLO_MISSIONS:add_imgui(function()
                 { 0x71, 0x2E, 0x01, 0x01 }
             )
         else
-            if casino_heist_patch then
-                casino_heist_patch:disable_patch()
+            if casinoHeistPatch then
+                casinoHeistPatch:disable_patch()
             end
         end
     end
@@ -130,25 +151,24 @@ if CURRENT_BUILD == TARGET_BUILD then -- don't create the thread if the script i
     script.register_looped("SOLO_MISSIONS", function()
         if SoloMissions then
             if script.is_active(FMMC_LAUNCHER) then
-                local iArrayPos = locals.get_int(FMMC_LAUNCHER, 19875 + 34) -- Local_1....?\.f_..? = Global_2.....?\.f_....?\[iVar11\];
-
-                if iArrayPos > 0 then
-                    locals.set_int(FMMC_LAUNCHER, 19875 + 15, 1)
-                    globals.set_int(794744 + 4 + 1 + iArrayPos * 89 + 69, 1) -- if \(iVar0 != -1 && BitTest\(Global_......?\.f_.?\[iVar0 /\*89\*/\]\.f_..?, 13\)\)
+                local index = locals.get_int(FMMC_LAUNCHER, scrLocals[FMMC_LAUNCHER].missionVariation)
+                if index > 0 then
+                    locals.set_int(FMMC_LAUNCHER, scrLocals[FMMC_LAUNCHER].minPlayers, 1)
+                    globals.set_int(MissionHeaderMinPlayers(index), 1)
                 end
             end
 
-            globals.set_int(4718592 + 3523, 1) -- Global_4......?\.f_....? = DATAFILE::DATADICT_GET_INT\(iVar1, "minNu"\);
-            globals.set_int(4718592 + 3529 + 1, 1) -- Global_4......?\.f_....?\[bVar0\] = DATAFILE::DATAARRAY_GET_INT\(iVar2, bVar0\);
-            globals.set_int(4718592 + 180865 + 1, 0) -- StringCopy\(&cVar420, "tmrsp", 8\);
-            globals.set_int(4718592 + 3526, 1) -- Global_4......?\.f_....? = DATAFILE::DATADICT_GET_INT\(iVar1, "dtn"\);
-            globals.set_int(4718592 + 3527, 1)
+            globals.set_int(scrGlobals.minNumParticipants, 1)
+            globals.set_int(scrGlobals.numPlayersPerTeam + 1, 1)
+            globals.set_int(scrGlobals.criticalMinimumForTeam + 1, 0)
+            globals.set_int(scrGlobals.numberOfTeams, 1)
+            globals.set_int(scrGlobals.maxNumberOfTeams, 1)
         end
     end)
 end
 
 event.register_handler(menu_event.ScriptsReloaded, function()
-    if casino_heist_patch then
-        casino_heist_patch:disable_patch()
+    if casinoHeistPatch then
+        casinoHeistPatch:disable_patch()
     end
 end)
