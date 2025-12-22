@@ -27,7 +27,7 @@ local function GetMissionScript()
     return nil
 end
 
-local TARGET_BUILD <const> = "3570.0"
+local TARGET_BUILD <const> = "3725.0"
 local CURRENT_BUILD <const> = GetBuildNumber()
 local FMMC_LAUNCHER <const> = "fmmc_launcher"
 
@@ -37,12 +37,12 @@ local casinoHeistPatch = nil
 
 -- search in fmmc_launcher.c
 local scrGlobals = {
-    nextContentID = 4718592 + 131931,          -- "nrcid" ... StringCopy(Global_...[... /*6*/]
+    nextContentID = 4718592 + 114029,          -- "nrcid" ... StringCopy(Global_...[... /*6*/]
     minNumParticipants = 4718592 + 3536,       -- Global_... = "minNu"
-    numPlayersPerTeam = 4718592 + 3542,        -- regex: else\s+?{\s+?HUD::ADD_TEXT_COMPONENT_INTEGER\(Global_
-    criticalMinimumForTeam = 4718592 + 184007, -- "tcmin" ... Global_...[...] = 0;
+    numPlayersPerTeam = 4718592 + 3542,        -- regex: else\n.*?HUD::ADD_TEXT_COMPONENT_INTEGER\(Global_.*?
+    criticalMinimumForTeam = 4718592 + 185505, -- "tcmin" ... Global_...[...] = 0;
     numberOfTeams = 4718592 + 3539,            -- Global_... = "dtn"
-    maxNumberOfTeams = 4718592 + 3540,         -- Global_... = "tnum"
+    maxNumberOfTeams = 4718592 + 3540,         -- Global_.*?.f_.*? = DATAFILE::DATADICT_GET_INT\(dict, "tnum"\);
 }
 local function MissionHeaderMinPlayers(index)
     return 794954 + 4 + 1 + index * 95 + 75 -- [5] = -1279529723; ... Global_... = 1;
@@ -50,20 +50,20 @@ end
 
 local scrLocals = {
     ["fmmc_launcher"] = {
-        minPlayers = 19990 + 15,       -- regex: Local_\d+?\.f_\d+? = 1;\s+?Global_\d+?\.f_\d+? = 1;
-        missionVariation = 19990 + 34, -- regex: HUD_MG_TENNIS.+?\s+.+?Local_\d+?\.f_\d+? \+ 1
+        minPlayers = 20054 + 15,       -- regex: Local_.*?.f_.*? = 1;\n.*?Global_.*?.f_.*? = 1;
+        missionVariation = 20054 + 34, -- regex: HUD_MG_TENNIS.+?\s+.+?Local_\d+?\.f_\d+? \+ 1
     },
     ["fm_mission_controller"] = {
-        serverBitSet = 19787 + 1,
-        serverBitSet2 = 19787 + 2,
-        nextMission = 19787 + 1062,   -- regex: (Local_\d+?\.f_\d+?) < 6 && \1 >= 0
-        teamScore = 19787 + 1232 + 1, -- regex: < 4\)\s+?{\s+?(Local_\d+?\.f_\d+?\[.+?\]) = \(?\1 \+ .+?\)?;
+        serverBitSet = 19791 + 1,
+        serverBitSet2 = 19791 + 2,
+        nextMission = 19791 + 1062,   -- regex: (Local_\d+?\.f_\d+?) < 6 && \1 >= 0
+        teamScore = 19791 + 1232 + 1, -- regex: < 4\)\s+?{\s+?(Local_\d+?\.f_\d+?\[.+?\]) = \(?\1 \+ .+?\)?;
     },
     ["fm_mission_controller_2020"] = {
-        serverBitSet = 54353 + 1,
-        serverBitSet2 = 54353 + 2,
-        nextMission = 54353 + 1589,   -- regex: same as above
-        teamScore = 54353 + 1776 + 1, -- regex: same as above
+        serverBitSet = 55789 + 1,
+        serverBitSet2 = 55789 + 2,
+        nextMission = 55789 + 1589,   -- regex: same as above
+        teamScore = 55789 + 1776 + 1, -- regex: same as above
     }
 }
 
