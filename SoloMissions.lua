@@ -69,7 +69,7 @@ local scrLocals = {
 ----------------------------------------
 
 local soloEnabled = false
-local patchEnabled = false
+local casinoHeistPatchEnabled = false
 local casinoHeistPatch = nil
 
 SOLO_MISSIONS:add_imgui(function()
@@ -122,18 +122,18 @@ SOLO_MISSIONS:add_imgui(function()
     ImGui.SeparatorText("Casino Heist Patch")
     ImGui.Spacing()
 
-    patchEnabled, Clicked = ImGui.Checkbox("Enable Patch", patchEnabled)
+    casinoHeistPatchEnabled, Clicked = ImGui.Checkbox("Enable Patch", casinoHeistPatchEnabled)
 
     if Clicked then
         script.run_in_fiber(function()
-            if patchEnabled then
+            if casinoHeistPatchEnabled then
                 if casinoHeistPatch then
                     casinoHeistPatch:enable_patch()
                     return
                 end
 
                 casinoHeistPatch = scr_patch:new(
-                    "fmmc_launcher",
+                    FMMC_LAUNCHER,
                     "SCJJAT",
                     "2D 01 03 00 00 5D ? ? ? 2A 06 56 05 00 5D ? ? ? 20 2A 06 56 05 00 5D",
                     5,
@@ -163,6 +163,8 @@ local fmMissionId = 0
 local fmVariation = 0
 local fmSubVariation = 0
 local missionId = ""
+local skipPrepPatchEnabled = false
+local skipPrepPatch = nil
 
 MISSION_LAUNCHER:add_imgui(function()
     if not IsOnline() then
@@ -289,6 +291,37 @@ MISSION_LAUNCHER:add_imgui(function()
         end)
     end
 
+    ImGui.SameLine()
+
+    skipPrepPatchEnabled, Clicked2 = ImGui.Checkbox("Skip Prep Check", skipPrepPatchEnabled)
+
+    if ImGui.IsItemHovered() then
+        ImGui.SetTooltip("So you can launch some missions without completing the preps.")
+    end
+
+    if Clicked2 then
+        script.run_in_fiber(function()
+            if skipPrepPatchEnabled then
+                if skipPrepPatch then
+                    skipPrepPatch:enable_patch()
+                    return
+                end
+
+                skipPrepPatch = scr_patch:new(
+                    FMMC_LAUNCHER,
+                    "SPMPC",
+                    "2D 01 05 00 00 62 ? ? ? 56 03 00 2E 01 00 5D",
+                    5,
+                    { 0x2E, 0x01, 0x00 }
+                )
+            else
+                if skipPrepPatch then
+                    skipPrepPatch:disable_patch()
+                end
+            end
+        end)
+    end
+
     ImGui.Spacing()
     ImGui.BulletText("Some jobs require you to be a boss and own the corresponding property.")
     ImGui.BulletText("Unstable! You might get kicked, or the game could even crash.")
@@ -320,5 +353,8 @@ end)
 event.register_handler(menu_event.ScriptsReloaded, function()
     if casinoHeistPatch then
         casinoHeistPatch:disable_patch()
+    end
+    if skipPrepPatch then
+        skipPrepPatch:disable_patch()
     end
 end)
