@@ -9,7 +9,12 @@ function locals.set_bits(scriptName, index, ...)
 end
 
 local function IsOnline()
-    return network.is_session_started() and not script.is_active("maintransition")
+    if not network.is_session_started() then
+        return false
+    end
+
+    local ok, transitionActive = pcall(script.is_active, "maintransition")
+    return not ok or not transitionActive
 end
 
 local function GetMissionScript()
@@ -28,8 +33,6 @@ local FREEMODE <const> = "freemode"
 ----------------------------------------
 -- VARIABLES
 ----------------------------------------
-
-local TARGET_VERSION <const> = "1.72-3725"
 
 -- search in fmmc_launcher.c
 local scrGlobals = {
@@ -77,9 +80,6 @@ SOLO_MISSIONS:add_imgui(function()
         ImGui.Text("Unavailable in Single Player.")
         return
     end
-
-    ImGui.Text("Compatible Game Version: " .. TARGET_VERSION)
-    ImGui.Text("Please check your game version before using!")
 
     ImGui.Dummy(1, 10)
     ImGui.SeparatorText("Solo Missions")
