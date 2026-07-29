@@ -29,7 +29,7 @@ local FREEMODE <const> = "freemode"
 -- VARIABLES
 ----------------------------------------
 
-local TARGET_VERSION <const> = "Game Version 1.73 - Build 3889"
+local TARGET_VERSION <const> = "1.73-3889.0"
 
 -- search in fmmc_launcher.c
 local scrGlobals = {
