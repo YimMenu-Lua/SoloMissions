@@ -29,38 +29,38 @@ local FREEMODE <const> = "freemode"
 -- VARIABLES
 ----------------------------------------
 
-local TARGET_VERSION <const> = "1.72-3725"
+local TARGET_VERSION <const> = "1.73-3889.0"
 
 -- search in fmmc_launcher.c
 local scrGlobals = {
-    minNumParticipants = 4718592 + 3536,       -- regex: Global_\d+\.f_\d+\s?=.+?"minNu"
-    numberOfTeams = 4718592 + 3539,            -- regex: Global_\d+\.f_\d+\s?=.+?"dtn"
-    maxNumberOfTeams = 4718592 + 3540,         -- regex: Global_\d+\.f_\d+\s?=.+?"tnum"
-    numPlayersPerTeam = 4718592 + 3542,        -- regex: else\s+?{\s+?HUD::ADD_TEXT_COMPONENT_INTEGER\(Global_
-    nextContentID = 4718592 + 132821,          -- regex: "nrcid"[^{}]+?Global_\d+\.f_\d+\[
-    criticalMinimumForTeam = 4718592 + 185951, -- regex: "tcmin"[^}]+?Global_\d+\.f_\d+\[
+    minNumParticipants = 4718592 + 3769,       -- regex: Global_\d+\.f_\d+\s?=.+?"minNu"
+    numberOfTeams = 4718592 + 3772,            -- regex: Global_\d+\.f_\d+\s?=.+?"dtn"
+    maxNumberOfTeams = 4718592 + 3773,         -- regex: Global_\d+\.f_\d+\s?=.+?"tnum"
+    numPlayersPerTeam = 4718592 + 3775,        -- regex: else\s+?{\s+?HUD::ADD_TEXT_COMPONENT_INTEGER\(Global_
+    nextContentID = 4718592 + 133252,          -- regex: "nrcid"[^{}]+?Global_\d+\.f_\d+\[
+    criticalMinimumForTeam = 4718592 + 190163, -- regex: "tcmin"[^}]+?Global_\d+\.f_\d+\[
 }
 
 local function MissionHeaderMinPlayers(index)
-    return 794954 + 4 + 1 + index * 95 + 75 -- regex: -1279529723;[\s\S]+?Global_.+= 1;
+    return 794989 + 4 + 1 + index * 95 + 75 -- regex: -1279529723;[\s\S]+?Global_.+= 1;
 end
 
 local scrLocals = {
     ["fmmc_launcher"] = {
-        minPlayers = 20054 + 15,       -- regex: Local_\d+\.f_\d+ = 1;\s+Global_\d+\.f_\d+ = 1;
-        missionVariation = 20054 + 34, -- regex: HUD_MG_TENNIS.+\s+.+?Local_\d+\.f_\d+ \+ 1
+        minPlayers = 20194 + 15,       -- regex: Local_\d+\.f_\d+ = 1;\s+Global_\d+\.f_\d+ = 1;
+        missionVariation = 20194 + 34, -- regex: HUD_MG_TENNIS.+\s+.+?Local_\d+\.f_\d+ \+ 1
     },
     ["fm_mission_controller"] = {
-        serverBitSet = 19791 + 1,
-        serverBitSet2 = 19791 + 2,
-        nextMission = 19791 + 1062,   -- regex: (Local_\d+\.f_\d+) < 6 && \1 >= 0
-        teamScore = 19791 + 1232 + 1, -- regex: < 4\)\s+?{\s+?(Local_\d+\.f_\d+\[.+?\]) = \(?\1 \+ .+?\)?;\s+if
+        serverBitSet = 19808 + 1,
+        serverBitSet2 = 19808 + 2,
+        nextMission = 19808 + 1062,   -- regex: (Local_\d+\.f_\d+) < 6 && \1 >= 0
+        teamScore = 19808 + 1232 + 1, -- regex: < 4\)\s+?{\s+?(Local_\d+\.f_\d+\[.+?\]) = \(?\1 \+ .+?\)?;\s+if
     },
     ["fm_mission_controller_2020"] = {
-        serverBitSet = 55789 + 1,
-        serverBitSet2 = 55789 + 2,
-        nextMission = 55789 + 1589,   -- regex: same as above
-        teamScore = 55789 + 1776 + 1, -- regex: same as above
+        serverBitSet = 56070 + 1,
+        serverBitSet2 = 56070 + 2,
+        nextMission = 56070 + 1589,   -- regex: same as above
+        teamScore = 56070 + 1776 + 1, -- regex: same as above
     }
 }
 
